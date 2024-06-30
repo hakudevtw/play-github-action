@@ -16,8 +16,13 @@ jobs:
       - name: Test code
         run: npm test
   build:
-    runs-on: ubuntu-latest
     needs: test
+    runs-on: ubuntu-latest
+    # Define the outputs of the build job
+    outputs:
+      # Access the script-file output from step by ID
+      # steps[step-id].outputs[output-name]
+      script-file: ${{ steps.publish.outputs.script-file }}
     steps:
       - name: Get code
         uses: actions/checkout@v3
@@ -25,15 +30,19 @@ jobs:
         run: npm ci
       - name: Build website
         run: npm run build
+      - name: Publish JS filename
+        id: publish
+        # Find all JS files in the dist/assets directory (linux command)
+        # output-name = script-file
+        run: find dist/assets/*.js -type f -execdir echo 'script-file={}' >> $GITHUB_OUTPUT ';'
+
+        # Deprecated old syntax
+        # run: find dist/assets/*.js -type f -execdir echo '::set-output name=script-file::{}' ';'
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: dist-files
-          path: dist # Path to the build files
-          # You can also specify multiple paths like below
-          # path: |
-          #   dist
-          #   public
+          path: dist
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -45,5 +54,8 @@ jobs:
           name: dist-files
       - name: Output contents
         run: ls
+      - name: Output script-file
+        # needs[build].outputs[output-name]
+        run: echo ${{ needs.build.outputs.script-file }}
       - name: Deploy
         run: echo "Deploying website"
