@@ -9,7 +9,16 @@ jobs:
     steps:
       - name: Get code
         uses: actions/checkout@v3
+      # Use cache if available, else install dependencies and cache them
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: ~/.npm
+          # add dynamic cache key based on package-lock.json for invalidation
+          key: deps-node-modules-${{ hashFiles('**/packages-lock.json') }}
       - name: Install dependencies
+        # npm ci will automatically use cache if package-lock.json is unchanged
         run: npm ci
       - name: Lint code
         run: npm run lint
@@ -26,6 +35,11 @@ jobs:
     steps:
       - name: Get code
         uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/packages-lock.json') }}
       - name: Install dependencies
         run: npm ci
       - name: Build website
